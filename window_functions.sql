@@ -446,3 +446,81 @@ $$) AS ct (Country VARCHAR,
            "2012" INTEGER)
 
 Order by Country ASC;
+
+
+-- ROLLUP() is a grouping function that allows you to generate subtotals and grand totals in your query results. For example, you can use ROLLUP() to count the number of gold medals earned by each country and gender, and then generate subtotals for each country.
+-- Count the gold medals awarded per country and gender.
+-- Generate Country-level gold award counts.
+-- Count the gold medals per country and gender
+
+SELECT
+  Country,
+  Gender,
+  COUNT(*) AS Gold_Awards
+FROM Summer_Medals
+WHERE
+  Year = 2004
+  AND Medal = 'Gold'
+  AND Country IN ('DEN', 'NOR', 'SWE')
+-- Generate Country-level subtotals
+GROUP BY Country, ROLLUP(Gender)
+ORDER BY Country ASC, Gender ASC;
+
+
+-- CUBE() is a grouping function that allows you to generate subtotals and grand totals in your query results. For example, you can use CUBE() to count the number of gold medals earned by each country and gender, and then generate subtotals for each country and gender.
+-- Generate a breakdown of the medals awarded to Russia per country and medal type, including all group-level subtotals and a grand total.
+-- Count the medals awarded per gender and medal type.
+-- Generate all possible group-level counts (per gender and medal type subtotals and the grand total).
+-- Count the medals per gender and medal type
+SELECT
+  Gender,
+  Medal,
+  COUNT(*) AS Awards
+FROM Summer_Medals
+WHERE
+  Year = 2012
+  AND Country = 'RUS'
+-- Get all possible group-level subtotals
+GROUP BY CUBE(Medal, Gender)
+ORDER BY Gender ASC, Medal ASC;
+
+
+-- COALESCE() is a function that allows you to replace NULL values with a specified value. For example, you can use COALESCE() to replace NULL values in the medal column with 'No Medal'.
+SELECT
+  -- Replace the nulls in the columns with meaningful text
+  COALESCE(Country, 'All countries') AS Country,
+  COALESCE(Gender, 'All genders') AS Gender,
+  COUNT(*) AS Awards
+FROM Summer_Medals
+WHERE
+  Year = 2004
+  AND Medal = 'Gold'
+  AND Country IN ('DEN', 'NOR', 'SWE')
+GROUP BY ROLLUP(Country, Gender)
+ORDER BY Country ASC, Gender ASC;
+
+
+-- STRING_AGG() is a function that allows you to concatenate values from multiple rows into a single string. For example, you can use STRING_AGG() to concatenate the names of all the countries that won gold medals in a given year.
+-- it changes column into a row
+
+WITH Country_Medals AS (
+  SELECT
+    Country,
+    COUNT(*) AS Medals
+  FROM Summer_Medals
+  WHERE Year = 2000
+    AND Medal = 'Gold'
+  GROUP BY Country),
+
+  Country_Ranks AS (
+  SELECT
+    Country,
+    RANK() OVER (ORDER BY Medals DESC) AS Rank
+  FROM Country_Medals
+  ORDER BY Rank ASC)
+
+-- Compress the countries column
+SELECT STRING_AGG(Country, ', ')
+FROM Country_Ranks
+-- Select only the top three ranks
+WHERE Rank<=3;
